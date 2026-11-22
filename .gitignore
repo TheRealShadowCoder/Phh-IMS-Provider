@@ -29,3 +29,12 @@ keys/*.keystore
 **/build/
 **/.cxx/
 **/.externalNativeBuild/
+
+# Private signing keys and keystores (never commit)
+*.pk8
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.key
