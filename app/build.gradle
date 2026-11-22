@@ -1,0 +1,68 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
+
+def platformApiJar = providers.gradleProperty('platformApiJar').orNull
+
+android {
+    compileSdk 33
+    ndkVersion "25.1.8937393"
+
+    defaultConfig {
+        // Keep the package distinct from the preinstalled/stale PhhIms entry.
+        // IMS feature initialization uses hidden platform APIs. Android enforces
+        // the non-SDK interface blacklist for apps targeting API 28 and above.
+        applicationId "me.phh.ims.a52qfix3"
+        minSdk 24
+        targetSdk 24
+        versionCode 42
+        versionName "1.7"
+
+        }
+    sourceSets {
+        main {
+            jniLibs {
+                srcDirs += "${projectDir}/jniLibs"
+            }
+        }
+    }
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    externalNativeBuild {
+        cmake {
+            path file('jni/CMakeLists.txt')
+        }
+    }
+    namespace 'me.phh.ims'
+}
+
+dependencies {
+    if (platformApiJar != null) {
+        // Host-side regression tests need the same private platform API
+        // surface as the platform_apis Soong build. Supply a full platform
+        // stub/classes jar without replacing the checked-in compatibility jar.
+        compileOnly files(platformApiJar, 'libs/ImsMediaFramework.jar')
+    } else {
+        compileOnly fileTree(dir: 'libs', include: '*.jar')
+    }
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
+    testImplementation 'junit:junit:4.13.2'
+}
