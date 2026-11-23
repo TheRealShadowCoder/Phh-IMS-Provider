@@ -1,0 +1,10 @@
+gradle.projectsEvaluated {
+    def platformJar = rootProject.findProperty("platformApiJar")
+    if (platformJar != null) {
+        rootProject.allprojects { p ->
+            p.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+                options.bootstrapClasspath = p.files(platformJar, options.bootstrapClasspath)
+            }
+        }
+    }
+}

@@ -19,3 +19,7 @@ No release signing key files were found in the app project checkouts during this
 ## Repository safeguards
 
 Private key extensions such as `.pk8`, `.pem`, `.p12`, `.pfx`, `.jks`, `.keystore`, and `.key` are ignored by Git. Check `git status` before every commit and never force-add a private signing file.
+
+## GitHub Actions
+
+The signed development build workflow reads the base64-encoded debug keystore from the repository Actions secret A52_DEBUG_KEYSTORE_BASE64. The workflow is manual-only and runs from main; it restores the keystore only on the temporary runner, builds a debug APK, and uploads the APK artifact. Never add the base64 value or the keystore file to Git.

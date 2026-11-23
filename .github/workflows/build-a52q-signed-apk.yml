@@ -1,0 +1,54 @@
+name: Build A52q PhhIms with the existing debug key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source and native submodules
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install Android build tools
+        run: sdkmanager --install "platforms;android-33" "build-tools;33.0.2" "ndk;25.1.8937393"
+
+      - name: Restore the protected debug keystore
+        env:
+          ANDROID_DEBUG_KEYSTORE_BASE64: ${{ secrets.A52_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_DEBUG_KEYSTORE_BASE64" || { echo "Missing repository Actions secret A52_DEBUG_KEYSTORE_BASE64"; exit 1; }
+          mkdir -p "$HOME/.android"
+          printf '%s' "$ANDROID_DEBUG_KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+          keytool -list -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android >/dev/null
+
+      - name: Build APK signed with the existing key
+        run: bash ./gradlew --no-daemon --init-script ci/platform-boot.gradle -PplatformApiJar=libs/android.jar :app:assembleDebug
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: PhhIms-A52q-debug-signed
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
